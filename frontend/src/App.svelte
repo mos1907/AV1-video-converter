@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import { flip } from 'svelte/animate';
   import { quintOut } from 'svelte/easing';
+  import Icon from "./Icon.svelte";
 
   // Initialize state variables for the component
   // Bileşen için durum değişkenlerini başlat
@@ -15,7 +16,7 @@
   let conversionProgress = 0;  // Current conversion progress / Mevcut dönüşüm ilerlemesi
   let conversionSpeed = '';  // Current conversion speed / Mevcut dönüşüm hızı
   let errorMessage = '';  // Error message to display / Görüntülenecek hata mesajı
-  let showErrorPopup = false;  // Whether to show the error popup / Hata açılır penceresinin gösterilip gösterilmeyeceği
+  let showErrorPopup = false;  // Whether to show the error popup / Hata Pop'u gösterilip gösterilmeyeceği
 
   // Define table headers with tooltips
   // Araç ipuçları ile tablo başlıklarını tanımla
@@ -42,7 +43,7 @@
     document.addEventListener('click', closeContextMenu);
 
     // Listen for conversion progress updates from Go backend
-    // Go arka ucundan dönüşüm ilerleme güncellemelerini dinle
+    // Go Bakcend'den dönüşüm ilerleme güncellemelerini dinle
     window.runtime.EventsOn("conversion:progress", (data) => {
       console.log("Progress update:", data);
       conversionProgress = data.progress;
@@ -50,7 +51,7 @@
     });
 
     // Listen for conversion completion event from Go backend
-    // Go arka ucundan dönüşüm tamamlanma olayını dinle
+    // Go Bakcend'den dönüşüm tamamlanma olayını dinle
     window.runtime.EventsOn("conversion:complete", (outputPath) => {
       console.log("Conversion completed:", outputPath);
       progressVideo = null;
@@ -58,7 +59,7 @@
     });
 
     // Listen for conversion error event from Go backend
-    // Go arka ucundan dönüşüm hata olayını dinle
+    // Go Bakcend'den dönüşüm hata olayını dinle
     window.runtime.EventsOn("conversion:error", (error) => {
       console.error("Conversion error:", error);
       errorMessage = error;
@@ -68,13 +69,13 @@
     });
 
     // Listen for next video conversion event from Go backend
-    // Go arka ucundan sonraki video dönüşüm olayını dinle
+    // Go Bakcend'den sonraki video dönüşüm olayını dinle
     window.runtime.EventsOn("conversion:next", () => {
       updateProgressVideo();
     });
 
     // Get the last destination folder from Go backend
-    // Go arka ucundan son hedef klasörü al
+    // Go Bakcend'den son hedef klasörü al
     destinationFolder = await window.go.main.App.GetLastDestination();
   });
 
@@ -83,7 +84,7 @@
   async function handleSelectFiles() {
     try {
       // Call Go backend to open file dialog and get video info
-      // Dosya iletişim kutusunu açmak ve video bilgilerini almak için Go arka ucunu çağır
+      // Dosya iletişim kutusunu açmak ve video bilgilerini almak için Go Bakcend'i çağır
       const videoInfos = await window.go.main.App.SelectVideoFiles();
       if (videoInfos && videoInfos.length > 0) {
         selectedVideos = [...selectedVideos, ...videoInfos];
@@ -100,7 +101,7 @@
   async function handleSelectDestination() {
     try {
       // Call Go backend to open folder dialog
-      // Klasör iletişim kutusunu açmak için Go arka ucunu çağır
+      // Klasör iletişim kutusunu açmak için Go Bakcend'i çağır
       const folder = await window.go.main.App.SelectDestinationFolder();
       if (folder) {
         destinationFolder = folder;
@@ -129,7 +130,7 @@
       conversionSpeed = '';
       try {
         // Call Go backend to start video conversion
-        // Video dönüşümünü başlatmak için Go arka ucunu çağır
+        // Video dönüşümünü başlatmak için Go Bakcend'i çağır
         await window.go.main.App.ConvertVideo(progressVideo.fullPath, destinationFolder, progressVideo.frameCount);
       } catch (err) {
         console.error("Conversion Error:", err);
@@ -274,7 +275,7 @@
   <button class="add-video-btn" on:click={handleSelectFiles}>
     <i class="fas fa-plus"></i>
     <i class="fas fa-video"></i>
-    Add Video
+    Add Video(s)
   </button>
 
   <!-- Table displaying selected videos -->
@@ -318,7 +319,7 @@
   <div class="instructions">
     <p>Right-click on a video to remove it from the list | Drag and drop to reorder videos</p>
     <p>Duration format: Hours:Minutes:Seconds:Frames (HH:MM:SS:FF)</p>
-    <p>For a more advanced application, feel free to contact me at <a href="mailto:murat@muratdemirci.com.tr">murat@muratdemirci.com.tr</a></p>
+    <p>For customization or advanced features, please contact: <a href="mailto:murat@muratdemirci.com.tr">murat@muratdemirci.com.tr</a></p>
   </div>
 
   <!-- Context menu for video list items -->
@@ -431,6 +432,7 @@
 
   .add-video-btn i {
     margin-right: 8px;
+    font-size: 16px; /* İkon boyutunu artır */
   }
 
   .destination-selector {
@@ -487,7 +489,7 @@
   .table-container {
     flex: 1;
     overflow-y: auto;
-    max-height: calc(100vh - 400px);
+    max-height: calc(100vh - 500px); /* Açıklama için daha fazla alan bırak */
   }
 
   thead {
@@ -576,10 +578,33 @@
     font-size: 12px;
     color: var(--text-color);
     text-align: center;
+    background-color: var(--table-bg-color);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   }
 
   .instructions p {
     margin: 4px 0;
+  }
+
+  .instructions a[href^="mailto:"] {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
+  }
+
+  .instructions a[href^="mailto:"]:hover {
+    color: var(--secondary-color);
+    text-decoration: underline;
+  }
+
+  .instructions a[href^="mailto:"]:before {
+    content: "\f0e0"; /* Font Awesome envelope icon */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    margin-right: 5px;
   }
 
   .conversion-progress {
@@ -655,3 +680,7 @@
     margin-bottom: 20px;
   }
 </style>
+<svelte:head>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+</svelte:head>

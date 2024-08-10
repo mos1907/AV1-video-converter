@@ -18,7 +18,7 @@ func main() {
 	err := wails.Run(&options.App{
 		Title:         "MD-AV1-Converter",
 		Width:         1024,
-		Height:        768,
+		Height:        680,
 		DisableResize: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,

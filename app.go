@@ -38,7 +38,7 @@ type App struct {
 	appDir          string          // Application directory / Uygulama dizini
 	ffmpegPath      string          // Path to FFmpeg executable / FFmpeg yürütülebilir dosyasının yolu
 	ffprobePath     string          // Path to FFprobe executable / FFprobe yürütülebilir dosyasının yolu
-	logFile         *os.File        // Log file / Günlük dosyası
+	logFile         *os.File        // Log file / Log dosyası
 	configPath      string          // Path to config file / Yapılandırma dosyasının yolu
 	lastDestination string          // Last used destination folder / Son kullanılan hedef klasör
 }
@@ -52,7 +52,7 @@ func NewApp() *App {
 
 // startup is called when the app starts
 // Initializes the application, sets up logging, and finds FFmpeg/FFprobe
-// Uygulama başladığında çağrılır, günlük kaydını ayarlar ve FFmpeg/FFprobe'u bulur
+// Uygulama başladığında çağrılır, Log kaydını ayarlar ve FFmpeg/FFprobe'u bulur
 func (a *App) startup(ctx context.Context) {
 	// Save the context
 	// Bağlamı kaydet
@@ -78,7 +78,7 @@ func (a *App) startup(ctx context.Context) {
 	log.Printf("Executable path: %s", os.Args[0])
 
 	// Setup logging
-	// Günlük kaydını ayarla
+	// Log kaydını ayarla
 	logsDir := filepath.Join(a.appDir, "logs")
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		log.Fatal("Error creating logs directory:", err)
@@ -154,10 +154,10 @@ func (a *App) findExecutable(name string) string {
 
 // cleanupLogs removes old log files
 // Deletes log files older than 24 hours, except for app.log
-// 24 saatten eski günlük dosyalarını siler, app.log hariç
+// 24 saatten eski Log dosyalarını siler, app.log hariç
 func (a *App) cleanupLogs(logsDir string) {
 	// Read all files in the logs directory
-	// Günlük dizinindeki tüm dosyaları oku
+	// Log dizinindeki tüm dosyaları oku
 	files, err := ioutil.ReadDir(logsDir)
 	if err != nil {
 		log.Printf("Error reading logs directory: %v", err)
@@ -240,7 +240,7 @@ func (a *App) saveConfig() {
 // Uygulama kapanırken temizleme işlemlerini gerçekleştirir
 func (a *App) shutdown(ctx context.Context) {
 	// Close the log file if it's open
-	// Günlük dosyası açıksa kapat
+	// Log dosyası açıksa kapat
 	if a.logFile != nil {
 		a.logFile.Close()
 	}
@@ -282,7 +282,7 @@ func (a *App) SelectVideoFiles() ([]VideoInfo, error) {
 	}
 
 	// Return the video information to the frontend
-	// Video bilgilerini ön uca döndür
+	// Video bilgilerini Frontend'e gönder
 	return videoInfos, nil
 }
 
@@ -389,7 +389,7 @@ func (a *App) SelectDestinationFolder() (string, error) {
 	a.saveConfig()
 
 	// Return the selected folder path to the frontend
-	// Seçilen klasör yolunu ön uca döndür
+	// Seçilen klasör yolunu Frontend'e gönder
 	return folder, nil
 }
 
@@ -398,7 +398,7 @@ func (a *App) SelectDestinationFolder() (string, error) {
 // Uygulamanın durumundan son kullanılan hedef klasörü alır
 func (a *App) GetLastDestination() string {
 	// Return the last destination to the frontend
-	// Son hedefi ön uca döndür
+	// Son hedefi Frontend'e gönder
 	return a.lastDestination
 }
 
@@ -421,7 +421,7 @@ func (a *App) ConvertVideo(inputPath, outputFolder string, totalFrames int) erro
 	}
 
 	// Prepare log file for FFmpeg output
-	// FFmpeg çıktısı için günlük dosyasını hazırla
+	// FFmpeg çıktısı için log dosyasını hazırla
 	logFileName := outputFileName + "_ffmpeg.log"
 	logFilePath := filepath.Join(a.appDir, "logs", logFileName)
 	logFile, err := os.Create(logFilePath)
@@ -482,10 +482,10 @@ func (a *App) ConvertVideo(inputPath, outputFolder string, totalFrames int) erro
 
 // monitorProgress tracks the conversion progress and emits update events
 // Monitors the FFmpeg log file and sends progress updates to the frontend
-// FFmpeg günlük dosyasını izler ve ilerleme güncellemelerini ön uca gönderir
+// FFmpeg Log dosyasını izler ve ilerleme güncellemelerini Frontend'e gönderir
 func (a *App) monitorProgress(logPath string, totalFrames int, done chan bool) {
 	// Open the log file
-	// Günlük dosyasını aç
+	// Log dosyasını aç
 	file, err := os.Open(logPath)
 	if err != nil {
 		log.Printf("Error opening log file: %v", err)
@@ -503,7 +503,7 @@ func (a *App) monitorProgress(logPath string, totalFrames int, done chan bool) {
 		select {
 		case <-done:
 			// Conversion finished, send 100% progress
-			// Dönüşüm bitti, %100 ilerleme gönder
+			// Dönüşüm bitti, %100  bilgisini gönder
 			runtime.EventsEmit(a.ctx, "conversion:progress", map[string]interface{}{
 				"progress": 100,
 				"speed":    "",
@@ -511,7 +511,7 @@ func (a *App) monitorProgress(logPath string, totalFrames int, done chan bool) {
 			return
 		default:
 			// Read the last 1024 bytes of the log file
-			// Günlük dosyasının son 1024 baytını oku
+			// Log dosyasının son 1024 baytını oku
 			file.Seek(-1024, 2)
 			scanner := bufio.NewScanner(file)
 			var lastLine string
@@ -544,7 +544,7 @@ func (a *App) monitorProgress(logPath string, totalFrames int, done chan bool) {
 					}
 
 					// Send progress update to frontend if progress has increased
-					// İlerleme artmışsa ön uca ilerleme güncellemesi gönder
+					// İlerleme artmışsa Frontend'e ilerleme güncellemesi gönder
 					if progress > lastProgress {
 						lastProgress = progress
 						fmt.Printf("İlerleme: %.2f%%, Hız: %s\n", progress, speed)

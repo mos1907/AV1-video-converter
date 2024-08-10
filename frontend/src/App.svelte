@@ -1,40 +1,64 @@
 <script>
+  // Import necessary Svelte functions and modules
+  // Gerekli Svelte fonksiyonlarını ve modüllerini içe aktar
   import { onMount } from 'svelte';
   import { flip } from 'svelte/animate';
   import { quintOut } from 'svelte/easing';
 
-  let selectedVideos = [];
-  let progressVideo = null;
-  let contextMenu = { show: false, x: 0, y: 0, index: -1 };
-  let draggedOverIndex = -1;
-  let destinationFolder = '';
-  let conversionProgress = 0;
-  let conversionSpeed = '';
-  let errorMessage = '';
-  let showErrorPopup = false;
+  // Initialize state variables for the component
+  // Bileşen için durum değişkenlerini başlat
+  let selectedVideos = [];  // Array to store selected video information / Seçilen video bilgilerini saklamak için dizi
+  let progressVideo = null;  // Currently processing video / Şu anda işlenen video
+  let contextMenu = { show: false, x: 0, y: 0, index: -1 };  // Context menu state / Bağlam menüsü durumu
+  let draggedOverIndex = -1;  // Index of the item being dragged over / Üzerine sürüklenen öğenin indeksi
+  let destinationFolder = '';  // Selected destination folder / Seçilen hedef klasör
+  let conversionProgress = 0;  // Current conversion progress / Mevcut dönüşüm ilerlemesi
+  let conversionSpeed = '';  // Current conversion speed / Mevcut dönüşüm hızı
+  let errorMessage = '';  // Error message to display / Görüntülenecek hata mesajı
+  let showErrorPopup = false;  // Whether to show the error popup / Hata açılır penceresinin gösterilip gösterilmeyeceği
 
+  // Define table headers with tooltips
+  // Araç ipuçları ile tablo başlıklarını tanımla
+  const tableHeaders = [
+    { label: "#", tooltip: "Index" },
+    { label: "File Path", tooltip: "Full path of the video file" },
+    { label: "Duration", tooltip: "Video duration (HH:MM:SS:FF)" },
+    { label: "Frames", tooltip: "Total number of frames" },
+    { label: "Codec", tooltip: "Video codec" },
+    { label: "Size", tooltip: "File size" }
+  ];
+
+  // Set up event listeners and initialize data when the component mounts
+  // Bileşen monte edildiğinde olay dinleyicilerini ayarla ve verileri başlat
   onMount(async () => {
+    // Listen for Wails runtime loaded event
+    // Wails çalışma zamanı yüklendi olayını dinle
     window.runtime.EventsOn("wails:loaded", () => {
       console.log("Wails runtime Loaded");
     });
 
+    // Add click event listener to close context menu
+    // Bağlam menüsünü kapatmak için tıklama olay dinleyicisi ekle
     document.addEventListener('click', closeContextMenu);
 
-    // Progress ve hız güncellemelerini dinle
+    // Listen for conversion progress updates from Go backend
+    // Go arka ucundan dönüşüm ilerleme güncellemelerini dinle
     window.runtime.EventsOn("conversion:progress", (data) => {
       console.log("Progress update:", data);
       conversionProgress = data.progress;
       conversionSpeed = data.speed;
     });
 
-    // Dönüşüm tamamlandığında
+    // Listen for conversion completion event from Go backend
+    // Go arka ucundan dönüşüm tamamlanma olayını dinle
     window.runtime.EventsOn("conversion:complete", (outputPath) => {
       console.log("Conversion completed:", outputPath);
       progressVideo = null;
       updateProgressVideo();
     });
 
-    // Dönüşüm hatası olduğunda
+    // Listen for conversion error event from Go backend
+    // Go arka ucundan dönüşüm hata olayını dinle
     window.runtime.EventsOn("conversion:error", (error) => {
       console.error("Conversion error:", error);
       errorMessage = error;
@@ -43,17 +67,23 @@
       updateProgressVideo();
     });
 
-    // Sıradaki video için
+    // Listen for next video conversion event from Go backend
+    // Go arka ucundan sonraki video dönüşüm olayını dinle
     window.runtime.EventsOn("conversion:next", () => {
       updateProgressVideo();
     });
 
-    // Son destination'ı al
+    // Get the last destination folder from Go backend
+    // Go arka ucundan son hedef klasörü al
     destinationFolder = await window.go.main.App.GetLastDestination();
   });
 
+  // Function to handle selecting video files
+  // Video dosyalarını seçme işlemini yöneten fonksiyon
   async function handleSelectFiles() {
     try {
+      // Call Go backend to open file dialog and get video info
+      // Dosya iletişim kutusunu açmak ve video bilgilerini almak için Go arka ucunu çağır
       const videoInfos = await window.go.main.App.SelectVideoFiles();
       if (videoInfos && videoInfos.length > 0) {
         selectedVideos = [...selectedVideos, ...videoInfos];
@@ -65,8 +95,12 @@
     }
   }
 
+  // Function to handle selecting destination folder
+  // Hedef klasör seçme işlemini yöneten fonksiyon
   async function handleSelectDestination() {
     try {
+      // Call Go backend to open folder dialog
+      // Klasör iletişim kutusunu açmak için Go arka ucunu çağır
       const folder = await window.go.main.App.SelectDestinationFolder();
       if (folder) {
         destinationFolder = folder;
@@ -77,6 +111,8 @@
     }
   }
 
+  // Function to update the current video being processed
+  // İşlenen mevcut videoyu güncelleyen fonksiyon
   function updateProgressVideo() {
     if (!progressVideo && selectedVideos.length > 0) {
       progressVideo = selectedVideos.shift();
@@ -85,11 +121,15 @@
     }
   }
 
+  // Function to start the video conversion process
+  // Video dönüşüm sürecini başlatan fonksiyon
   async function startConversion() {
     if (progressVideo && destinationFolder) {
       conversionProgress = 0;
       conversionSpeed = '';
       try {
+        // Call Go backend to start video conversion
+        // Video dönüşümünü başlatmak için Go arka ucunu çağır
         await window.go.main.App.ConvertVideo(progressVideo.fullPath, destinationFolder, progressVideo.frameCount);
       } catch (err) {
         console.error("Conversion Error:", err);
@@ -100,25 +140,35 @@
     }
   }
 
+  // Function to handle drag start event
+  // Sürükleme başlangıç olayını yöneten fonksiyon
   function dragStart(event, index) {
     event.dataTransfer.setData('text/plain', index);
     event.target.classList.add('dragging');
   }
 
+  // Function to handle drag end event
+  // Sürükleme bitiş olayını yöneten fonksiyon
   function dragEnd(event) {
     event.target.classList.remove('dragging');
     draggedOverIndex = -1;
   }
 
+  // Function to handle drag over event
+  // Sürükleme üzerinde olayını yöneten fonksiyon
   function dragOver(event, index) {
     event.preventDefault();
     draggedOverIndex = index;
   }
 
+  // Function to handle drag leave event
+  // Sürüklemeden ayrılma olayını yöneten fonksiyon
   function dragLeave() {
     draggedOverIndex = -1;
   }
 
+  // Function to handle drop event
+  // Bırakma olayını yöneten fonksiyon
   function drop(event, targetIndex) {
     event.preventDefault();
     const sourceIndex = parseInt(event.dataTransfer.getData('text/plain'));
@@ -131,6 +181,8 @@
     draggedOverIndex = -1;
   }
 
+  // Function to show context menu
+  // Bağlam menüsünü gösteren fonksiyon
   function showContextMenu(event, index) {
     event.preventDefault();
     contextMenu = {
@@ -141,10 +193,14 @@
     };
   }
 
+  // Function to close context menu
+  // Bağlam menüsünü kapatan fonksiyon
   function closeContextMenu() {
     contextMenu.show = false;
   }
 
+  // Function to delete an item from the video list
+  // Video listesinden bir öğeyi silen fonksiyon
   function deleteItem() {
     if (contextMenu.index > -1) {
       selectedVideos = selectedVideos.filter((_, index) => index !== contextMenu.index);
@@ -152,45 +208,47 @@
     }
   }
 
+  // Function to show error message
+  // Hata mesajını gösteren fonksiyon
   function showError(message) {
     errorMessage = message;
     showErrorPopup = true;
   }
 
+  // Function to close error popup
+  // Hata açılır penceresini kapatan fonksiyon
   function closeErrorPopup() {
     showErrorPopup = false;
     errorMessage = '';
   }
 </script>
 
-<svelte:head>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
-</svelte:head>
-
 <main on:contextmenu|preventDefault>
   <h1>AV1 Video Converter</h1>
 
+  <!-- Destination folder selector -->
+  <!-- Hedef klasör seçici -->
   <div class="destination-selector">
     <button on:click={handleSelectDestination}>Select Destination</button>
     <input type="text" bind:value={destinationFolder} readonly placeholder="No destination selected">
   </div>
 
+  <!-- Progress display for current video conversion -->
+  <!-- Mevcut video dönüşümü için ilerleme göstergesi -->
   <div class="progress-container">
     <h2>Progress</h2>
     {#if progressVideo}
       <table>
         <thead>
         <tr>
-          <th>File Path</th>
-          <th>Duration</th>
-          <th>Frame</th>
-          <th>Codec</th>
-          <th>Size</th>
+          {#each tableHeaders as header}
+            <th title={header.tooltip}>{header.label}</th>
+          {/each}
         </tr>
         </thead>
         <tbody>
         <tr>
+          <td>-</td>
           <td>{progressVideo.fullPath}</td>
           <td>{progressVideo.duration}</td>
           <td>{progressVideo.frameCount}</td>
@@ -211,22 +269,23 @@
     {/if}
   </div>
 
+  <!-- Button to add new videos -->
+  <!-- Yeni videolar eklemek için düğme -->
   <button class="add-video-btn" on:click={handleSelectFiles}>
     <i class="fas fa-plus"></i>
     <i class="fas fa-video"></i>
     Add Video
   </button>
 
+  <!-- Table displaying selected videos -->
+  <!-- Seçilen videoları gösteren tablo -->
   <div class="table-container">
     <table>
       <thead>
       <tr>
-        <th>#</th>
-        <th>File Path</th>
-        <th>Duration</th>
-        <th>Frame</th>
-        <th>Codec</th>
-        <th>Size</th>
+        {#each tableHeaders as header}
+          <th title={header.tooltip}>{header.label}</th>
+        {/each}
       </tr>
       </thead>
       <tbody>
@@ -253,16 +312,25 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Instructions for users -->
+  <!-- Kullanıcılar için talimatlar -->
   <div class="instructions">
     <p>Right-click on a video to remove it from the list | Drag and drop to reorder videos</p>
+    <p>Duration format: Hours:Minutes:Seconds:Frames (HH:MM:SS:FF)</p>
     <p>For a more advanced application, feel free to contact me at <a href="mailto:murat@muratdemirci.com.tr">murat@muratdemirci.com.tr</a></p>
   </div>
+
+  <!-- Context menu for video list items -->
+  <!-- Video listesi öğeleri için bağlam menüsü -->
   {#if contextMenu.show}
     <div class="context-menu" style="top: {contextMenu.y}px; left: {contextMenu.x}px;">
       <button on:click={deleteItem}>Delete</button>
     </div>
   {/if}
 
+  <!-- Error popup -->
+  <!-- Hata açılır penceresi -->
   {#if showErrorPopup}
     <div class="error-popup">
       <div class="error-content">

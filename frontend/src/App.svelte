@@ -682,5 +682,5 @@
 </style>
 <svelte:head>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+  <link href="src/assets/css/all.min.css" rel="stylesheet">
 </svelte:head>

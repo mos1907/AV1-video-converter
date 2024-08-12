@@ -35,8 +35,9 @@ Before we start writing the application, let's take a look at what we'll need. I
 - The compiled view of our application will look like this:
 
 <div align="center">
-  <img src="/av1converter/av1-video-converter.webp" alt="av1converter">
-  <br>
+
+  <br><img width="1030" alt="av1converter" src="https://github.com/user-attachments/assets/fac155e4-f860-4ba9-ab78-fc0dfea359ee">
+
   *Figure 1: Application view*
 </div>
 

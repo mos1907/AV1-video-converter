@@ -1,15 +1,4 @@
----
-title: "AV1 Video Converter"
-date: 2024-08-10
-lastmod: 2024-08-10
-draft: false
-tags: ["Golang", "Svelte", "Wails", "FFmpeg"]
-authors: ["Murat"]
-categories: ["Software Development"]
-description: "AV1 Video Converter"
-lightgallery: true
-featuredImage: "av1converter.webp"
----
+
 # AV1 Video Converter
 
 - In this article, I will share information about how to write a converter program for the AV1 Codec, which I previously provided information about.
